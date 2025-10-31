@@ -1,4 +1,4 @@
-<index.html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
@@ -363,9 +363,9 @@
     document.getElementById('pauseBtn').addEventListener('click', togglePause);
     function togglePause(){ if(!state.running) return; state.paused = !state.paused; }
 
-    // Start game automatically on load 
+    // Start game automatically on load (still supports Start button / Space / Click)
 resetGame();
-
+requestAnimationFrame(step);
   </script>
 </body>
 </html>
