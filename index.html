@@ -363,27 +363,9 @@
     document.getElementById('pauseBtn').addEventListener('click', togglePause);
     function togglePause(){ if(!state.running) return; state.paused = !state.paused; }
 
-    // Start on first input
-    window.addEventListener('keydown', firstStart, {once:true});
-    window.addEventListener('mousedown', firstStart, {once:true});
-    window.addEventListener('touchstart', firstStart, {once:true, passive:false});
-    function firstStart(){ resetGame(); }
+    // Start game automatically on load 
+resetGame();
 
-    // Give small coyote time when leaving ground
-    let prevGrounded = true;
-    function postPhysicsTick(){
-      if (prevGrounded && !player.grounded){ player.coyoteTime = 8; }
-      prevGrounded = player.grounded;
-    }
-
-    // Hook post-physics into main loop via RAF shim
-    (function rafShim(){
-      const _raf = window.requestAnimationFrame;
-      window.requestAnimationFrame = (cb)=> _raf((t)=>{ cb(t); postPhysicsTick(); });
-    })();
-
-    // Kick off splash
-    drawSplash();
   </script>
 </body>
 </html>
