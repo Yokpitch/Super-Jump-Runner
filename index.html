@@ -95,27 +95,55 @@
 
     // ====== Obstacles (top & bottom) ======
     function spawnObstacle(){
-      const gapMin = 110, gapMax = 170; 
-      const gap = rand(gapMin, gapMax);
-      const minTop = 30, minBottom = 30;
-      const maxTop = 300;
-      let topLen = rand(minTop, maxTop);
-      let bottomLen = Math.max(minBottom, (canvas.height/DPR) - (topLen + gap));
-      if (Math.random()<0.4){
-        const tweak = rand(-80, 80);
-        topLen = clamp(topLen + tweak, minTop, 360);
-        bottomLen = Math.max(minBottom, (canvas.height/DPR) - (topLen + gap));
-      }
-      const w = rand(40, 68);
-      const x = (canvas.width/DPR) + w;
-      const type = Math.random()<0.2 ? 'single' : 'pair';
-      if (type==='pair') {
-        state.obstacles.push({x, w, top: topLen, bottom: bottomLen, passed:false});
-      } else {
-        const isTop = Math.random()<0.5;
-        state.obstacles.push({x, w, top: isTop? rand(80, 360): 0, bottom: isTop? 0: rand(80, 360), passed:false});
-      }
+  const W = canvas.width / DPR, H = canvas.height / DPR;
+  const floor = H - 40;      // เส้นพื้น
+  const ceiling = 20;        // ระยะเพดานกันชน
+  const pad = 20;            // กันชนรอบช่อง
+  const playerH = player.h;
+
+  // ช่องว่างต้องผ่านได้แน่ ๆ
+  const clearance = 70; // ปรับได้ 60–90 ตามความยาก
+  const gapMin = Math.max(playerH + clearance, 110);
+  const gapMax = Math.min(200, (floor - ceiling) - 2*pad - 40);
+  const gap = rand(gapMin, gapMax);
+
+  // เลือกตำแหน่งกึ่งกลางช่องให้อยู่ในโซนปลอดภัย
+  const minCenter = ceiling + pad + gap/2;
+  const maxCenter = floor   - pad - gap/2;
+  const gapCenter = rand(Math.floor(minCenter), Math.floor(maxCenter));
+
+  // คำนวณความยาวเสาบน/ล่างจากตำแหน่งช่อง
+  let topLen    = Math.max(0, Math.floor(gapCenter - gap/2));
+  let bottomLen = Math.max(0, Math.floor(floor - (gapCenter + gap/2)));
+
+  // จำกัดความยาวขั้นต่ำ/ขั้นสูงนิดหน่อยให้ดูสมจริง
+  const minLen = 30;
+  topLen    = topLen    < minLen ? 0 : topLen;
+  bottomLen = bottomLen < minLen ? 0 : bottomLen;
+
+  // ความหนาเสา และจุดเกิด
+  const w = rand(44, 66);
+  const x = (canvas.width / DPR) + w;
+
+  // สุ่มให้มี “เสาเดี่ยว” บ้าง แต่ต้องไม่ปิดทาง
+  if (Math.random() < 0.2) {
+    const singleTop = Math.random() < 0.5;
+    if (singleTop) {
+      // เสาบนเดี่ยว: จำกัดความสูงให้เหลือทางด้านล่างเสมอ
+      const maxTop = floor - (playerH + clearance + pad);
+      topLen = clamp(rand(80, Math.min(360, maxTop)), 0, maxTop);
+      bottomLen = 0;
+    } else {
+      // เสาล่างเดี่ยว: จำกัดความสูงให้เหลือทางด้านบนเสมอ
+      const maxBottom = (floor - (ceiling + playerH + clearance + pad));
+      bottomLen = clamp(rand(80, Math.min(360, maxBottom)), 0, maxBottom);
+      topLen = 0;
     }
+  }
+
+  state.obstacles.push({ x, w, top: topLen, bottom: bottomLen, passed:false });
+}
+
 
     // ====== Particles ======
     function spawnBurst(x,y,n,color){
