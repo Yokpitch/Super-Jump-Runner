@@ -268,9 +268,18 @@
     document.getElementById('pauseBtn').addEventListener('click', togglePause);
     function togglePause(){ if(!state.running) return; state.paused = !state.paused; }
 
-    // ====== Auto start game loop on load ======
-    resetGame();
-    requestAnimationFrame(step);
+   // ====== Auto start game loop on load ======
+window.addEventListener('load', ()=>{
+  resetGame();
+  requestAnimationFrame(step);
+});
+
+// ให้ปุ่ม ▶ เริ่ม / เล่นใหม่ สั่งเริ่มลูปด้วย
+document.getElementById('startBtn').addEventListener('click', ()=>{
+  resetGame();
+  requestAnimationFrame(step);
+});
+
   </script>
 </body>
 </html>
