@@ -43,11 +43,14 @@
   </div>
 
   <script>
-    function fitCanvasToDPR() {
+  function fitCanvasToDPR() {
   const dpr = window.devicePixelRatio || 1;
-  const rect = canvas.getBoundingClientRect();
-  canvas.width = rect.width * dpr;
-  canvas.height = rect.height * dpr;
+  const W = 960; // ขนาด logical คงที่
+  const H = 540;
+  canvas.style.width = W + "px";
+  canvas.style.height = H + "px";
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   return dpr;
 }
