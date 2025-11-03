@@ -242,33 +242,33 @@
 
   // ===== Actions =====
   function addOrUpdate(){
-    const desc = byId('desc').value.trim();
-    const amountStr = byId('amount').value;
-    const payer = byId('payer').value;
-    const split = byId('split').checked;
+  const desc = byId('desc').value.trim();
+  const amountStr = byId('amount').value;
+  const payer = byId('payer').value;
+  const splitMode = byId('splitMode').value; // ✅ ใช้ค่าจาก select
 
-    const amt = Number(amountStr);
-    if(!desc){ alert('กรอกรายการก่อนนะ'); return }
-    if(!isFinite(amt) || amt <= 0){ alert('จำนวนเงินไม่ถูกต้อง'); return }
-    const amountSatang = toSatang(amt);
+  const amt = Number(amountStr);
+  if(!desc){ alert('กรอกรายการก่อนนะ'); return }
+  if(!isFinite(amt) || amt <= 0){ alert('จำนวนเงินไม่ถูกต้อง'); return }
+  const amountSatang = toSatang(amt);
 
-    if(editingId){
-      const idx = items.findIndex(x=>x.id===editingId);
-      if(idx>-1){ items[idx] = { ...items[idx], desc, amountSatang, payer, split } }
-      editingId = null;
-      byId('addBtn').textContent = 'เพิ่มรายการ';
-    } else {
-      items.push({ id: crypto.randomUUID(), ts: Date.now(), desc, amountSatang, payer, split });
-    }
-
-    // reset form
-    byId('desc').value = '';
-    byId('amount').value = '';
-    byId('payer').value = 'YOK';
-    byId('split').checked = true;
-
-    render();
+  if(editingId){
+    const idx = items.findIndex(x=>x.id===editingId);
+    if(idx>-1){ items[idx] = { ...items[idx], desc, amountSatang, payer, splitMode } }
+    editingId = null;
+    byId('addBtn').textContent = 'เพิ่มรายการ';
+  } else {
+    items.push({ id: crypto.randomUUID(), ts: Date.now(), desc, amountSatang, payer, splitMode });
   }
+
+  // reset form
+  byId('desc').value = '';
+  byId('amount').value = '';
+  byId('payer').value = 'YOK';
+  byId('splitMode').value = 'half'; // ตั้งกลับเป็น “หารครึ่ง”
+
+  render();
+}
 
   function onEdit(id){
     const it = items.find(x=>x.id===id);
