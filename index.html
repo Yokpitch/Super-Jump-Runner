@@ -183,31 +183,23 @@
       FRONGZ:{ paid:0, splitPaid:0, share:0 }
     };
 
-    for(const it of items){
-      const tr = document.createElement('tr');
-      const date = new Date(it.ts);
-      const d = date.toLocaleDateString('th-TH', { year:'2-digit', month:'2-digit', day:'2-digit' });
-
-      tr.innerHTML = `
-        <td class="mono">${d}</td>
-        <td>${escapeHtml(it.desc || '')}</td>
-        <td><span class="pill">${it.payer}</span></td>
-        <td class="right mono">${fmt.format(fromSatang(it.amountSatang))}</td>
-        <td>${it.split? '<span class="pill ok">หาร</span>':'<span class="pill">ไม่หาร</span>'}</td>
-        <td>
-          <button class="btn ghost" onclick="onEdit('${it.id}')">แก้ไข</button>
-          <button class="btn danger" onclick="onDelete('${it.id}')">ลบ</button>
-        </td>`;
-      tbody.appendChild(tr);
-
-      // Accumulate totals
-      totals[it.payer].paid += it.amountSatang;
-      if(it.split){
-        totals[it.payer].splitPaid += it.amountSatang;
-        totals.YOK.share += Math.round(it.amountSatang/2);
-        totals.FRONGZ.share += Math.round(it.amountSatang/2);
-      }
-    }
+    if(it.splitMode === 'half'){
+  // ✅ หารครึ่ง
+  totals[it.payer].splitPaid += it.amountSatang;
+  totals.YOK.share += Math.round(it.amountSatang / 2);
+  totals.FRONGZ.share += Math.round(it.amountSatang / 2);
+} else if(it.splitMode === 'charge'){
+  // ✅ เรียกเก็บ (ให้อีกคนจ่ายเต็ม)
+  totals[it.payer].splitPaid += it.amountSatang;
+  if(it.payer === 'YOK'){
+    totals.FRONGZ.share += it.amountSatang;
+  } else {
+    totals.YOK.share += it.amountSatang;
+  }
+} else {
+  // ✅ ไม่หาร
+  totals[it.payer].paid += it.amountSatang;
+}
 
     // Compute nets (only split items)
     const yNetSatang = totals.YOK.splitPaid - totals.YOK.share;
