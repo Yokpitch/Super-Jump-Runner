@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>YOK × FRONGZ — คำนวณค่าใช้จ่าย</title>
+  <meta name="theme-color" content="#0b1020" />
+  <link id="pwa-manifest" rel="manifest" href="#" />
+  <link id="apple-touch" rel="apple-touch-icon" href="#" />
   <style>
     :root{
       --bg:#0b1020;--panel:#12182b;--soft:#1a2240;--text:#e6f0ff;--muted:#b7c4e0;--acc:#6ae3ff;--danger:#ff7a93;--ok:#8af78d
@@ -45,7 +48,7 @@
 <body>
   <div class="wrap">
     <h1>YOK × FRONGZ — คำนวณค่าใช้จ่าย</h1>
-    <p class="lead">เพิ่มรายการค่าใช้จ่ายในช่องด้านล่าง พร้อมระบุยอดรายคน </p>
+    <p class="lead">เพิ่มรายการค่าใช้จ่าย และรูปแบบการชำระ</p>
 
     <div class="card" id="formCard">
       <div class="grid cols-4">
@@ -64,15 +67,23 @@
             <option value="FRONGZ">FRONGZ</option>
           </select>
         </div>
-        <div class="row" style="justify-content:space-between;margin-top:22px">
-          <label class="row" style="gap:8px"><input id="split" type="checkbox" checked /> หารครึ่ง</label>
-          <button id="addBtn" class="btn acc">เพิ่มรายการ</button>
+        <div>
+          <label>การแบ่ง</label>
+          <select id="splitMode">
+            <option value="half">หารครึ่ง</option>
+            <option value="charge">เรียกเก็บ</option>
+            <option value="none">ไม่หาร</option>
+          </select>
         </div>
       </div>
+      <div class="row" style="margin-top:10px;gap:8px;justify-content:space-between">
+        <span></span>
+        <button id="addBtn" class="btn acc">เพิ่มรายการ</button>
+      </div>
       <div class="row" style="margin-top:10px;gap:8px">
-        <button id="exportBtn" class="btn ghost">ส่งออก</button>
+        <button id="exportBtn" class="btn ghost">ส่งออก (JSON)</button>
         <label class="btn ghost" style="position:relative;overflow:hidden">
-          นำเข้า
+          นำเข้า (JSON)
           <input id="importFile" type="file" accept="application/json" style="position:absolute;inset:0;opacity:0;cursor:pointer" />
         </label>
         <button id="resetBtn" class="btn danger">ลบทั้งหมด</button>
@@ -87,14 +98,14 @@
             <th>รายการ</th>
             <th>จ่ายโดย</th>
             <th class="right">จำนวน</th>
-            <th style="width:80px">หารครึ่ง</th>
+            <th style="width:140px">การแบ่ง</th>
             <th style="width:160px">จัดการ</th>
           </tr>
         </thead>
         <tbody id="tbody"></tbody>
         <tfoot>
           <tr>
-            <td colspan="6" class="muted">* การคำนวณการโอน-รับเงิน จะพิจารณาเฉพาะรายการที่ติ๊ก "หารครึ่ง" เท่านั้น</td>
+            <td colspan="6" class="muted">* “เรียกเก็บ” คือให้อีกคนชำระเต็มจำนวนให้ผู้จ่าย | “ไม่หาร” คือส่วนตัว</td>
           </tr>
         </tfoot>
       </table>
@@ -110,10 +121,10 @@
           <div class="row" style="justify-content:space-between"><span>FRONGZ จ่ายทั้งหมด</span><strong class="mono" id="fPaid"></strong></div>
         </div>
         <div class="box">
-          <div class="row" style="justify-content:space-between"><span>ส่วนที่ YOK ต้องหาร</span><strong class="mono" id="yShare"></strong></div>
-          <div class="row" style="justify-content:space-between"><span>ส่วนที่ FRONGZ ต้องหาร</span><strong class="mono" id="fShare"></strong></div>
+          <div class="row" style="justify-content:space-between"><span>ส่วนที่ YOK ต้องรับผิดชอบ</span><strong class="mono" id="yShare"></strong></div>
+          <div class="row" style="justify-content:space-between"><span>ส่วนที่ FRONGZ ต้องรับผิดชอบ</span><strong class="mono" id="fShare"></strong></div>
           <hr style="border:0;border-top:1px solid #2a3460">
-          <div class="row" style="justify-content:space-between"><span>สุทธิ YOK (ยอดที่ต้องจ่ายเพิ่ม)</span><strong class="mono" id="yNet"></strong></div>
+          <div class="row" style="justify-content:space-between"><span>สุทธิ YOK ต้องชำระเพิ่ม</span><strong class="mono" id="yNet"></strong></div>
           <div class="row" style="justify-content:space-between"><span>สุทธิ FRONGZ</span><strong class="mono" id="fNet"></strong></div>
         </div>
       </div>
@@ -122,32 +133,55 @@
       </div>
     </div>
 
-    <p class="muted" style="margin-top:14px">ข้อมูลถูกบันทึกอัตโนมัติในเครื่อง (localStorage) — สามารถส่งออกไฟล์ JSON เพื่อเก็บ/แชร์ข้ามเครื่องได้</p>
+    <p class="muted" style="margin-top:14px">ข้อมูลถูกบันทึกอัตโนมัติในเครื่อง (localStorage) — สามารถส่งออกไฟล์ เพื่อเก็บ/แชร์ข้ามเครื่องได้</p>
   </div>
 
   <script>
   // ===== Utilities =====
   const fmt = new Intl.NumberFormat('th-TH', { style:'currency', currency:'THB', minimumFractionDigits:2 });
   const byId = (id)=>document.getElementById(id);
-  const LS_KEY = 'yok-frongz-split-v1';
+  const LS_KEY = 'yok-frongz-split-v2'; // bump เวอร์ชัน schema
 
   /** Convert float money -> satang integer to avoid FP errors */
   const toSatang = (v)=> Math.round(Number(v)*100);
   const fromSatang = (s)=> (s/100);
 
   // ===== State =====
-  let items = []; // {id, ts, desc, amountSatang, payer, split}
+  // {id, ts, desc, amountSatang, payer: 'YOK'|'FRONGZ', splitMode: 'half'|'charge'|'none'}
+  let items = [];
   let editingId = null;
 
   function save(){ localStorage.setItem(LS_KEY, JSON.stringify(items)); }
   function load(){
+    // migrate จาก v1 (split:boolean) หากมี
     try{
-      const raw = localStorage.getItem(LS_KEY);
-      if(raw){ items = JSON.parse(raw); }
+      const rawV2 = localStorage.getItem(LS_KEY);
+      if(rawV2){ items = JSON.parse(rawV2); return; }
+      // ลองโหลดคีย์เก่า
+      const rawV1 = localStorage.getItem('yok-frongz-split-v1');
+      if(rawV1){
+        const old = JSON.parse(rawV1);
+        items = (Array.isArray(old)? old: []).map(it=>({
+          id: it.id || crypto.randomUUID(),
+          ts: typeof it.ts==='number'? it.ts : Date.now(),
+          desc: String(it.desc||''),
+          amountSatang: typeof it.amountSatang==='number' ? it.amountSatang : toSatang(Number(it.amount||0)),
+          payer: (it.payer==='FRONGZ')? 'FRONGZ':'YOK',
+          splitMode: it.split===true ? 'half' : 'none'
+        }));
+        save();
+      }
     }catch(e){ console.error(e); items=[] }
   }
 
   // ===== Rendering =====
+  function renderSplitMode(it){
+    const m = it.splitMode || 'none';
+    if(m==='half')   return '<span class="pill ok">หารครึ่ง</span>';
+    if(m==='charge') return '<span class="pill" style="border-color:#6f2d2d">เรียกเก็บ</span>';
+    return '<span class="pill">ไม่หาร</span>';
+  }
+
   function render(){
     const tbody = byId('tbody');
     tbody.innerHTML = '';
@@ -168,27 +202,38 @@
         <td>${escapeHtml(it.desc || '')}</td>
         <td><span class="pill">${it.payer}</span></td>
         <td class="right mono">${fmt.format(fromSatang(it.amountSatang))}</td>
-        <td>${it.split? '<span class="pill ok">หาร</span>':'<span class="pill">ไม่หาร</span>'}</td>
+        <td>${renderSplitMode(it)}</td>
         <td>
           <button class="btn ghost" onclick="onEdit('${it.id}')">แก้ไข</button>
           <button class="btn danger" onclick="onDelete('${it.id}')">ลบ</button>
         </td>`;
       tbody.appendChild(tr);
 
-      // Accumulate totals
+      // รวมยอดจ่ายทั้งหมด
       totals[it.payer].paid += it.amountSatang;
-      if(it.split){
+
+      // คิดเฉพาะรายการที่เป็นการ "แบ่ง/ชดเชย"
+      if(it.splitMode !== 'none'){
         totals[it.payer].splitPaid += it.amountSatang;
-        totals.YOK.share += Math.round(it.amountSatang/2);
-        totals.FRONGZ.share += Math.round(it.amountSatang/2);
+
+        if(it.splitMode === 'half'){
+          totals.YOK.share    += Math.round(it.amountSatang/2);
+          totals.FRONGZ.share += Math.round(it.amountSatang/2);
+        } else if(it.splitMode === 'charge'){
+          // ผู้ที่ไม่ได้จ่าย ต้องรับผิดชอบทั้งหมด
+          if(it.payer === 'YOK'){
+            totals.FRONGZ.share += it.amountSatang; // FRONGZ ต้องจ่ายคืนให้ YOK เต็มจำนวน
+          } else {
+            totals.YOK.share += it.amountSatang;
+          }
+        }
       }
     }
 
-    // Compute nets (only split items)
+    // สุทธิ (จ่ายในรายการแบ่ง − ส่วนที่ควรรับผิดชอบ)
     const yNetSatang = totals.YOK.splitPaid - totals.YOK.share;
     const fNetSatang = totals.FRONGZ.splitPaid - totals.FRONGZ.share;
 
-    // Fill summary
     byId('count').textContent = count;
     byId('yPaid').textContent = fmt.format(fromSatang(totals.YOK.paid));
     byId('fPaid').textContent = fmt.format(fromSatang(totals.FRONGZ.paid));
@@ -197,16 +242,14 @@
     byId('yNet').textContent = fmt.format(fromSatang(yNetSatang));
     byId('fNet').textContent = fmt.format(fromSatang(fNetSatang));
 
-    // Settlement sentence
     const settle = byId('settle');
     let text = '';
     if(Math.abs(yNetSatang + fNetSatang) > 1){
-      // Should be near 0; if not, force reconcile message
       text = '⚠️ มีข้อผิดพลาดในการคำนวณ โปรดลองรีเฟรชหรือตรวจสอบจำนวนเงิน';
     } else if (yNetSatang > 0) {
-      text = `สรุป: FRONGZ ควรโอนให้ YOK <strong class="mono">${fmt.format(fromSatang(yNetSatang))}</strong> ตามยอดปัจจุบัน`;
+      text = `สรุป: FRONGZ ควรโอนให้ YOK <strong class="mono">${fmt.format(fromSatang(yNetSatang))}</strong>`;
     } else if (yNetSatang < 0) {
-      text = `สรุป: YOK ควรโอนให้ FRONGZ <strong class="mono">${fmt.format(fromSatang(-yNetSatang))}</strong> ตามยอดปัจจุบัน`;
+      text = `สรุป: YOK ควรโอนให้ FRONGZ <strong class="mono">${fmt.format(fromSatang(-yNetSatang))}</strong>`;
     } else {
       text = 'สรุป: เสมอกัน ไม่ต้องโอนเพิ่ม ✅';
     }
@@ -220,7 +263,7 @@
     const desc = byId('desc').value.trim();
     const amountStr = byId('amount').value;
     const payer = byId('payer').value;
-    const split = byId('split').checked;
+    const splitMode = byId('splitMode').value;
 
     const amt = Number(amountStr);
     if(!desc){ alert('กรอกรายการก่อนนะ'); return }
@@ -229,18 +272,17 @@
 
     if(editingId){
       const idx = items.findIndex(x=>x.id===editingId);
-      if(idx>-1){ items[idx] = { ...items[idx], desc, amountSatang, payer, split } }
+      if(idx>-1){ items[idx] = { ...items[idx], desc, amountSatang, payer, splitMode } }
       editingId = null;
       byId('addBtn').textContent = 'เพิ่มรายการ';
     } else {
-      items.push({ id: crypto.randomUUID(), ts: Date.now(), desc, amountSatang, payer, split });
+      items.push({ id: crypto.randomUUID(), ts: Date.now(), desc, amountSatang, payer, splitMode });
     }
 
-    // reset form
     byId('desc').value = '';
     byId('amount').value = '';
     byId('payer').value = 'YOK';
-    byId('split').checked = true;
+    byId('splitMode').value = 'half';
 
     render();
   }
@@ -251,7 +293,7 @@
     byId('desc').value = it.desc;
     byId('amount').value = fromSatang(it.amountSatang).toFixed(2);
     byId('payer').value = it.payer;
-    byId('split').checked = !!it.split;
+    byId('splitMode').value = it.splitMode || 'none';
     editingId = id;
     byId('addBtn').textContent = 'บันทึกการแก้ไข';
     window.scrollTo({top:0,behavior:'smooth'});
@@ -283,14 +325,14 @@
       try{
         const data = JSON.parse(e.target.result);
         if(!Array.isArray(data)) throw new Error('format');
-        // basic sanitize
         items = data.map(it=>({
           id: it.id || crypto.randomUUID(),
           ts: typeof it.ts==='number'? it.ts : Date.now(),
           desc: String(it.desc||''),
-          amountSatang: toSatang(Number((it.amountSatang!=null)? fromSatang(it.amountSatang): it.amount)),
+          amountSatang: typeof it.amountSatang==='number' ? it.amountSatang
+                        : toSatang(Number((it.amountSatang!=null)? fromSatang(it.amountSatang): it.amount)),
           payer: (it.payer==='FRONGZ')? 'FRONGZ':'YOK',
-          split: !!it.split
+          splitMode: it.splitMode || (it.split===true ? 'half' : 'none')
         }));
         render();
       }catch(err){ alert('ไฟล์ไม่ถูกต้อง'); }
@@ -302,11 +344,11 @@
     return str.replace(/[&<>"]/g, s=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[s]));
   }
 
-  // ===== Bindings =====
-  byId('addBtn').addEventListener('click', addOrUpdate);
-  byId('resetBtn').addEventListener('click', resetAll);
-  byId('exportBtn').addEventListener('click', exportJson);
-  byId('importFile').addEventListener('change', (e)=>{
+  // Bind
+  document.getElementById('addBtn').addEventListener('click', addOrUpdate);
+  document.getElementById('resetBtn').addEventListener('click', resetAll);
+  document.getElementById('exportBtn').addEventListener('click', exportJson);
+  document.getElementById('importFile').addEventListener('change', (e)=>{
     const f=e.target.files?.[0]; if(f) importJson(f);
     e.target.value='';
   });
@@ -314,6 +356,77 @@
   // Init
   load();
   render();
+  </script>
+
+  <!-- PWA bootstrap (เหมือนเวอร์ชันก่อนหน้า) -->
+  <script>
+    (function(){
+      const isSecure = location.protocol.startsWith('http'); // HTTPS or http://localhost
+      if(!isSecure){
+        console.info('PWA disabled on file://; host on GitHub Pages or localhost to enable installable app.');
+        return;
+      }
+      function makeIcon(size){
+        const c = document.createElement('canvas'); c.width = c.height = size; const g=c.getContext('2d');
+        const grd = g.createLinearGradient(0,0,size,size);
+        grd.addColorStop(0,'#0b1020'); grd.addColorStop(1,'#1a2240');
+        g.fillStyle = grd; g.fillRect(0,0,size,size);
+        g.strokeStyle = '#6ae3ff'; g.lineWidth = Math.max(6, size*0.04); g.strokeRect(g.lineWidth, g.lineWidth, size-2*g.lineWidth, size-2*g.lineWidth);
+        g.fillStyle = '#e6f0ff';
+        g.font = `bold ${Math.floor(size*0.42)}px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial`;
+        g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillText('YF', size/2, size/2+size*0.02);
+        return c.toDataURL('image/png');
+      }
+      const icon192 = makeIcon(192);
+      const icon512 = makeIcon(512);
+
+      const manifest = {
+        name: 'YOK × FRONGZ — ค่าใช้จ่าย & หารกัน',
+        short_name: 'YF Split',
+        description: 'บันทึกค่าใช้จ่ายของ YOK และ FRONGZ พร้อมคำนวณว่าใครติดหนี้ใคร',
+        start_url: '.',
+        scope: '.',
+        display: 'standalone',
+        background_color: '#0b1020',
+        theme_color: '#0b1020',
+        icons: [
+          { src: icon192, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+          { src: icon512, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+        ]
+      };
+      const manifestBlob = new Blob([JSON.stringify(manifest)], {type:'application/manifest+json'});
+      const manifestUrl = URL.createObjectURL(manifestBlob);
+      document.getElementById('pwa-manifest').setAttribute('href', manifestUrl);
+      document.getElementById('apple-touch').setAttribute('href', icon192);
+
+      if('serviceWorker' in navigator){
+        const swCode = `const CACHE='yf-split-v1';
+self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['./','./index.html'])))}); 
+self.addEventListener('activate',e=>{e.waitUntil(self.clients.claim())});
+self.addEventListener('fetch',e=>{const r=e.request;if(r.method!=='GET')return;e.respondWith((async()=>{const c=await caches.match(r);try{const f=await fetch(r);const t=f.clone();caches.open(CACHE).then(C=>C.put(r,t));return f}catch(err){return c||Response.error()}})())});`;
+        const swBlob = new Blob([swCode], {type:'text/javascript'});
+        const swUrl = URL.createObjectURL(swBlob);
+        navigator.serviceWorker.register(swUrl, {scope:'./'}).catch(()=>{});
+      }
+
+      let deferredPrompt = null;
+      window.addEventListener('beforeinstallprompt', (e)=>{
+        e.preventDefault(); deferredPrompt = e;
+        let btn = document.getElementById('installBtn');
+        if(!btn){
+          btn = document.createElement('button');
+          btn.id='installBtn'; btn.className='btn acc'; btn.textContent='ติดตั้งเป็นแอป';
+          document.querySelector('#formCard .row').prepend(btn);
+        }
+        btn.onclick = async ()=>{
+          if(!deferredPrompt) return;
+          deferredPrompt.prompt();
+          await deferredPrompt.userChoice;
+          deferredPrompt=null; btn.remove();
+        };
+      });
+    })();
   </script>
 </body>
 </html>
