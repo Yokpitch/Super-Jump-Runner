@@ -167,6 +167,10 @@ function drawObstacles(W,H){
     topLen = Math.max(0, floor - bottomLen - MIN_PASS - rand(0, 12));
   }
 
+  if (bottomLen > 0) {
+  const MIN_VISIBLE = 40; // เสาล่างโผล่เหนือพื้นอย่างน้อย 40px (เดิม 10px)
+  if (bottomLen < MIN_VISIBLE) bottomLen = MIN_VISIBLE;
+    
   state.obstacles.push({ x, w, top: topLen, bottom: bottomLen, passed: false });
 }
 
