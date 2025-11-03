@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>YOK × FRONGZ — ค่าใช้จ่าย & หารกัน</title>
+  <title>YOK × FRONGZ — คำนวณค่าใช้จ่าย</title>
   <style>
     :root{
       --bg:#0b1020;--panel:#12182b;--soft:#1a2240;--text:#e6f0ff;--muted:#b7c4e0;--acc:#6ae3ff;--danger:#ff7a93;--ok:#8af78d
@@ -44,8 +44,8 @@
 </head>
 <body>
   <div class="wrap">
-    <h1>YOK × FRONGZ — ตัวช่วยคำนวณรายจ่าย & การหาร</h1>
-    <p class="lead">เพิ่มรายการค่าใช้จ่าย ระบุคนจ่าย และติ๊กว่า "หาร" หรือไม่ ระบบจะสรุปว่าใครติดหนี้ใครเท่าไหร่ (คิดเฉพาะรายการที่ติ๊ก "หาร")</p>
+    <h1>YOK × FRONGZ — คำนวณค่าใช้จ่าย</h1>
+    <p class="lead">เพิ่มรายการค่าใช้จ่ายในช่องด้านล่าง พร้อมระบุยอดรายคน </p>
 
     <div class="card" id="formCard">
       <div class="grid cols-4">
@@ -58,21 +58,21 @@
           <input id="amount" type="number" placeholder="0.00" step="0.01" min="0" />
         </div>
         <div>
-          <label>ใครจ่าย</label>
+          <label>จ่ายก่อนโดย</label>
           <select id="payer">
             <option value="YOK">YOK</option>
             <option value="FRONGZ">FRONGZ</option>
           </select>
         </div>
         <div class="row" style="justify-content:space-between;margin-top:22px">
-          <label class="row" style="gap:8px"><input id="split" type="checkbox" checked /> หาร 2 ?</label>
+          <label class="row" style="gap:8px"><input id="split" type="checkbox" checked /> หารครึ่ง</label>
           <button id="addBtn" class="btn acc">เพิ่มรายการ</button>
         </div>
       </div>
       <div class="row" style="margin-top:10px;gap:8px">
-        <button id="exportBtn" class="btn ghost">ส่งออก (JSON)</button>
+        <button id="exportBtn" class="btn ghost">ส่งออก</button>
         <label class="btn ghost" style="position:relative;overflow:hidden">
-          นำเข้า (JSON)
+          นำเข้า
           <input id="importFile" type="file" accept="application/json" style="position:absolute;inset:0;opacity:0;cursor:pointer" />
         </label>
         <button id="resetBtn" class="btn danger">ลบทั้งหมด</button>
@@ -87,14 +87,14 @@
             <th>รายการ</th>
             <th>จ่ายโดย</th>
             <th class="right">จำนวน</th>
-            <th style="width:80px">หาร?</th>
+            <th style="width:80px">หารครึ่ง</th>
             <th style="width:160px">จัดการ</th>
           </tr>
         </thead>
         <tbody id="tbody"></tbody>
         <tfoot>
           <tr>
-            <td colspan="6" class="muted">* การคำนวณการโอน-รับเงิน จะพิจารณาเฉพาะรายการที่ติ๊ก "หาร 2" เท่านั้น</td>
+            <td colspan="6" class="muted">* การคำนวณการโอน-รับเงิน จะพิจารณาเฉพาะรายการที่ติ๊ก "หารครึ่ง" เท่านั้น</td>
           </tr>
         </tfoot>
       </table>
@@ -110,10 +110,10 @@
           <div class="row" style="justify-content:space-between"><span>FRONGZ จ่ายทั้งหมด</span><strong class="mono" id="fPaid"></strong></div>
         </div>
         <div class="box">
-          <div class="row" style="justify-content:space-between"><span>ส่วนที่ YOK ควรรับผิดชอบ (เฉพาะรายการหาร)</span><strong class="mono" id="yShare"></strong></div>
-          <div class="row" style="justify-content:space-between"><span>ส่วนที่ FRONGZ ควรรับผิดชอบ (เฉพาะรายการหาร)</span><strong class="mono" id="fShare"></strong></div>
+          <div class="row" style="justify-content:space-between"><span>ส่วนที่ YOK ต้องหาร</span><strong class="mono" id="yShare"></strong></div>
+          <div class="row" style="justify-content:space-between"><span>ส่วนที่ FRONGZ ต้องหาร</span><strong class="mono" id="fShare"></strong></div>
           <hr style="border:0;border-top:1px solid #2a3460">
-          <div class="row" style="justify-content:space-between"><span>สุทธิ YOK (จ่ายหาร − ส่วนที่ควรรับผิดชอบ)</span><strong class="mono" id="yNet"></strong></div>
+          <div class="row" style="justify-content:space-between"><span>สุทธิ YOK (ยอดที่ต้องจ่ายเพิ่ม)</span><strong class="mono" id="yNet"></strong></div>
           <div class="row" style="justify-content:space-between"><span>สุทธิ FRONGZ</span><strong class="mono" id="fNet"></strong></div>
         </div>
       </div>
@@ -204,9 +204,9 @@
       // Should be near 0; if not, force reconcile message
       text = '⚠️ มีข้อผิดพลาดในการคำนวณ โปรดลองรีเฟรชหรือตรวจสอบจำนวนเงิน';
     } else if (yNetSatang > 0) {
-      text = `สรุป: FRONGZ ควรโอนให้ YOK <strong class="mono">${fmt.format(fromSatang(yNetSatang))}</strong> เพื่อให้เป็นธรรม`;
+      text = `สรุป: FRONGZ ควรโอนให้ YOK <strong class="mono">${fmt.format(fromSatang(yNetSatang))}</strong> ตามยอดปัจจุบัน`;
     } else if (yNetSatang < 0) {
-      text = `สรุป: YOK ควรโอนให้ FRONGZ <strong class="mono">${fmt.format(fromSatang(-yNetSatang))}</strong> เพื่อให้เป็นธรรม`;
+      text = `สรุป: YOK ควรโอนให้ FRONGZ <strong class="mono">${fmt.format(fromSatang(-yNetSatang))}</strong> ตามยอดปัจจุบัน`;
     } else {
       text = 'สรุป: เสมอกัน ไม่ต้องโอนเพิ่ม ✅';
     }
