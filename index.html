@@ -3,342 +3,317 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Double-Jump Obstacle Runner</title>
+  <title>YOK × FRONGZ — ค่าใช้จ่าย & หารกัน</title>
   <style>
-    :root { --bg:#0b1020; --fg:#e6f0ff; --accent:#6ae3ff; --accent2:#8af78d; --danger:#ff7a93; }
+    :root{
+      --bg:#0b1020;--panel:#12182b;--soft:#1a2240;--text:#e6f0ff;--muted:#b7c4e0;--acc:#6ae3ff;--danger:#ff7a93;--ok:#8af78d
+    }
     *{box-sizing:border-box}
-    html,body{height:100%;margin:0;background:linear-gradient(180deg,#0b1020,#0a0f1a);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";color:var(--fg)}
-
-มาส์กมาหน่อยตรงไหนบ้างที่ต้องแก้ นี่คือโค้ดปัจจุบัน
-    .wrap{max-width:960px;margin:0 auto;padding:16px}
-    h1{font-size:clamp(20px,3vw,28px);margin:12px 0 4px}
-    .panel{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
-    .btn{appearance:none;border:none;background:linear-gradient(135deg,var(--accent),#62a8ff);color:#032; padding:10px 14px;border-radius:14px;font-weight:700;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.25);transition:transform .1s ease,filter .2s ease}
-    .btn:hover{filter:saturate(1.2)}
-    .btn:active{transform:translateY(1px)}
-    .stat{display:flex;gap:10px;align-items:center}
-    .badge{background:#0f172a;border:1px solid #19324f;color:#bfe8ff;padding:8px 10px;border-radius:12px;font-weight:600}
-    canvas{width:100%;height:auto;border-radius:18px;display:block;background:radial-gradient(60% 120% at 50% -10%, #1b2442 0%, #0b1020 60%);}    
-    .hint{opacity:.85;font-size:14px;margin:8px 0 0}
-    .credits{opacity:.6;font-size:13px;margin-top:6px}
+    html,body{height:100%}
+    body{margin:0;background:linear-gradient(180deg,var(--bg),#0a0f1a);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+    .wrap{max-width:980px;margin:0 auto;padding:20px}
+    h1{font-size:clamp(20px,4vw,30px);margin:0 0 12px}
+    p.lead{color:var(--muted);margin-top:4px}
+    .card{background:var(--panel);border:1px solid #1f2949;border-radius:16px;box-shadow:0 10px 35px rgba(0,0,0,.35);padding:16px}
+    .grid{display:grid;gap:12px}
+    .grid.cols-2{grid-template-columns:1fr 1fr}
+    .grid.cols-3{grid-template-columns:repeat(3,1fr)}
+    .grid.cols-4{grid-template-columns:repeat(4,1fr)}
+    label{font-size:13px;color:var(--muted)}
+    input[type="text"],input[type="number"],select{width:100%;padding:12px 12px;border-radius:12px;border:1px solid #273055;background:var(--soft);color:var(--text)}
+    input[type="checkbox"]{transform:scale(1.2)}
+    .row{display:flex;gap:10px;align-items:center}
+    .btn{appearance:none;border:none;border-radius:12px;padding:12px 16px;cursor:pointer;background:#24305a;color:var(--text);transition:.15s}
+    .btn:hover{filter:brightness(1.08)}
+    .btn.acc{background:linear-gradient(135deg,#1fbef0,var(--acc))}
+    .btn.ghost{background:transparent;border:1px solid #2c375f}
+    .btn.danger{background:linear-gradient(135deg,#ff6a86,var(--danger))}
+    table{width:100%;border-collapse:separate;border-spacing:0;margin-top:12px}
+    thead th{position:sticky;top:0;background:rgba(18,24,43,.9);backdrop-filter:blur(6px)}
+    th,td{padding:10px;border-bottom:1px solid #25305a;text-align:left;font-size:14px}
+    tbody tr:hover{background:#0f1630}
+    .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;border:1px solid #33406e}
+    .pill.ok{border-color:#2d6f4f}
+    .right{text-align:right}
+    .muted{color:var(--muted)}
+    .summary{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+    .summary .box{background:var(--soft);border:1px solid #28325a;border-radius:12px;padding:12px}
+    .mono{font-variant-numeric:tabular-nums}
+    @media (max-width:720px){.grid.cols-4,.grid.cols-3{grid-template-columns:1fr 1fr}.summary{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
   <div class="wrap">
-    <h1>Double-Jump Obstacle Runner</h1>
-    <div class="panel">
-      <div class="stat">
-        <span class="badge">คะแนน: <span id="score">0</span></span>
-        <span class="badge">ดีที่สุด: <span id="best">0</span></span>
-        <span class="badge">ความเร็ว: <span id="spd">1.0x</span></span>
+    <h1>YOK × FRONGZ — ตัวช่วยคำนวณรายจ่าย & การหาร</h1>
+    <p class="lead">เพิ่มรายการค่าใช้จ่าย ระบุคนจ่าย และติ๊กว่า "หาร" หรือไม่ ระบบจะสรุปว่าใครติดหนี้ใครเท่าไหร่ (คิดเฉพาะรายการที่ติ๊ก "หาร")</p>
+
+    <div class="card" id="formCard">
+      <div class="grid cols-4">
+        <div>
+          <label>รายการ</label>
+          <input id="desc" type="text" placeholder="เช่น อาหารกลางวัน / ของใช้ในบ้าน" />
+        </div>
+        <div>
+          <label>จำนวนเงิน (บาท)</label>
+          <input id="amount" type="number" placeholder="0.00" step="0.01" min="0" />
+        </div>
+        <div>
+          <label>ใครจ่าย</label>
+          <select id="payer">
+            <option value="YOK">YOK</option>
+            <option value="FRONGZ">FRONGZ</option>
+          </select>
+        </div>
+        <div class="row" style="justify-content:space-between;margin-top:22px">
+          <label class="row" style="gap:8px"><input id="split" type="checkbox" checked /> หาร 2 ?</label>
+          <button id="addBtn" class="btn acc">เพิ่มรายการ</button>
+        </div>
       </div>
-      <div class="stat">
-        <button class="btn" id="startBtn">▶ เริ่ม / เล่นใหม่</button>
-        <button class="btn" id="pauseBtn">⏸ หยุดชั่วคราว (P)</button>
+      <div class="row" style="margin-top:10px;gap:8px">
+        <button id="exportBtn" class="btn ghost">ส่งออก (JSON)</button>
+        <label class="btn ghost" style="position:relative;overflow:hidden">
+          นำเข้า (JSON)
+          <input id="importFile" type="file" accept="application/json" style="position:absolute;inset:0;opacity:0;cursor:pointer" />
+        </label>
+        <button id="resetBtn" class="btn danger">ลบทั้งหมด</button>
       </div>
     </div>
-    <canvas id="game" width="960" height="540"></canvas>
-    <p class="hint">ควบคุม: <strong>Space / W / ↑ / คลิก / แตะ</strong> เพื่อกระโดด (กดซ้ำกลางอากาศเพื่อ <strong>Double Jump</strong>) กด <strong>P</strong> เพื่อหยุดชั่วคราว</p>
-    <p class="credits">อุปสรรคเป็นเสาทั้งด้านบนและด้านล่าง ความสูง/ช่องว่างสุ่ม ปรับความเร็วตามคะแนน มีระบบ <em>coyote time</em> และ <em>jump buffer</em> ให้ควบคุมลื่นไหล</p>
+
+    <div class="card" style="margin-top:16px">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:120px">วันที่</th>
+            <th>รายการ</th>
+            <th>จ่ายโดย</th>
+            <th class="right">จำนวน</th>
+            <th style="width:80px">หาร?</th>
+            <th style="width:160px">จัดการ</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+        <tfoot>
+          <tr>
+            <td colspan="6" class="muted">* การคำนวณการโอน-รับเงิน จะพิจารณาเฉพาะรายการที่ติ๊ก "หาร 2" เท่านั้น</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <h2 style="margin:0 0 8px">สรุปผล</h2>
+      <div class="summary">
+        <div class="box">
+          <div class="row" style="justify-content:space-between"><span>จำนวนรายการ</span><strong class="mono" id="count"></strong></div>
+          <hr style="border:0;border-top:1px solid #2a3460">
+          <div class="row" style="justify-content:space-between"><span>YOK จ่ายทั้งหมด</span><strong class="mono" id="yPaid"></strong></div>
+          <div class="row" style="justify-content:space-between"><span>FRONGZ จ่ายทั้งหมด</span><strong class="mono" id="fPaid"></strong></div>
+        </div>
+        <div class="box">
+          <div class="row" style="justify-content:space-between"><span>ส่วนที่ YOK ควรรับผิดชอบ (เฉพาะรายการหาร)</span><strong class="mono" id="yShare"></strong></div>
+          <div class="row" style="justify-content:space-between"><span>ส่วนที่ FRONGZ ควรรับผิดชอบ (เฉพาะรายการหาร)</span><strong class="mono" id="fShare"></strong></div>
+          <hr style="border:0;border-top:1px solid #2a3460">
+          <div class="row" style="justify-content:space-between"><span>สุทธิ YOK (จ่ายหาร − ส่วนที่ควรรับผิดชอบ)</span><strong class="mono" id="yNet"></strong></div>
+          <div class="row" style="justify-content:space-between"><span>สุทธิ FRONGZ</span><strong class="mono" id="fNet"></strong></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:12px;background:#0f1630;border-color:#26315b">
+        <div id="settle" style="font-size:15px"></div>
+      </div>
+    </div>
+
+    <p class="muted" style="margin-top:14px">ข้อมูลถูกบันทึกอัตโนมัติในเครื่อง (localStorage) — สามารถส่งออกไฟล์ JSON เพื่อเก็บ/แชร์ข้ามเครื่องได้</p>
   </div>
 
   <script>
-  function fitCanvasToDPR() {
-  const dpr = window.devicePixelRatio || 1;
-  const W = 960; // ขนาด logical คงที่
-  const H = 540;
-  canvas.style.width = W + "px";
-  canvas.style.height = H + "px";
-  canvas.width = W * dpr;
-  canvas.height = H * dpr;
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  return dpr;
-}
-    // ====== Game State ======
-    const state = {
-      running:false, paused:false, time:0, score:0, best: Number(localStorage.getItem('dj_best')||0),
-      speed: 5, baseSpeed:5, spawnEvery: 95, obstacles:[], particles:[],
-    };
+  // ===== Utilities =====
+  const fmt = new Intl.NumberFormat('th-TH', { style:'currency', currency:'THB', minimumFractionDigits:2 });
+  const byId = (id)=>document.getElementById(id);
+  const LS_KEY = 'yok-frongz-split-v1';
 
-    // ====== Player ======
-    const player = {
-      x: 180, y: 360, w: 24, h: 24, vx:0, vy:0,
-      gravity: 0.6, jumpV: -10.5, jump2V: -9.0,
-      grounded:false, jumpsLeft:2, coyoteTime:0, jumpBuffer:0,
-      color:'#8af78d', trail:[]
-    };
+  /** Convert float money -> satang integer to avoid FP errors */
+  const toSatang = (v)=> Math.round(Number(v)*100);
+  const fromSatang = (s)=> (s/100);
 
-    function resetGame(){
-      state.running = true; state.paused=false; state.time=0; state.score=0;
-      state.speed = state.baseSpeed; state.obstacles.length=0; state.particles.length=0;
-      player.y = 360; player.vx=0; player.vy=0; player.grounded=false; player.jumpsLeft=2; player.coyoteTime=0; player.jumpBuffer=0; player.trail.length=0;
-    }
+  // ===== State =====
+  let items = []; // {id, ts, desc, amountSatang, payer, split}
+  let editingId = null;
 
-    // ====== Input ======
-    function wantJump(){ player.jumpBuffer = 8; }
-    addEventListener('keydown', (e)=>{ 
-      if(['Space','KeyW','ArrowUp'].includes(e.code)) { e.preventDefault(); wantJump(); }
-      if(e.code==='KeyP') togglePause();
-    });
-    addEventListener('mousedown', wantJump);
-    addEventListener('touchstart', (e)=>{ e.preventDefault(); wantJump(); }, {passive:false});
-
-    function tryJump(){
-      if (player.grounded || player.coyoteTime>0) {
-        player.vy = player.jumpV; player.grounded=false; player.jumpsLeft=1; player.coyoteTime=0;
-        spawnBurst(player.x+player.w/2, player.y+player.h, 10, '#8af78d'); return true;
-      } else if (player.jumpsLeft>0) {
-        player.vy = player.jump2V; player.jumpsLeft=0;
-        spawnBurst(player.x+player.w/2, player.y+player.h, 10, '#6ae3ff'); return true;
-      }
-      return false;
-    }
-
-    // ====== Obstacles (top & bottom) ======
-function spawnObstacle(){
-  const W = canvas.width / DPR, H = canvas.height / DPR;
-
-  // เส้นบน/ล่างของพื้นที่เล่นจริง
-  const ceiling = 20;
-  const floor   = H - 40;
-
-  // พารามิเตอร์ความปลอดภัย (ปรับได้)
-  const SAFE_PAD    = 24;    // กันชนเหนือ/ใต้รางวิ่ง
-  const CLEARANCE   = 70;    // ช่องว่างที่ต้องมีเหนือความสูงผู้เล่น
-  const PLAYER_H    = player.h;
-
-  // โซน "แกนกลางช่อง" ที่ยอมให้สุ่ม (ไม่ชิดเพดาน/พื้นเกินไป)
-  const MIN_CENTER  = ceiling + SAFE_PAD + (PLAYER_H + CLEARANCE)/2;
-  const MAX_CENTER  = floor   - SAFE_PAD - (PLAYER_H + CLEARANCE)/2;
-
-  // ขอบเขต gap
-  const GAP_MIN = Math.max(PLAYER_H + CLEARANCE, 120);
-  const GAP_MAX = Math.min(220, (floor - ceiling) - SAFE_PAD*2);
-
-  // ความหนาเสา และจุดเกิด
-  const w = rand(44, 66);
-  const x = (canvas.width / DPR) + w;
-
-  // เราจะ “สุ่มแล้วตรวจ” สูงสุด N ครั้งเพื่อการันตีว่าผ่านได้
-  for (let tries = 0; tries < 20; tries++) {
-    const gap      = rand(GAP_MIN, GAP_MAX);
-    const center   = rand(Math.floor(MIN_CENTER), Math.floor(MAX_CENTER));
-
-    // จาก gap+center หาเสาบน/ล่าง
-    let topLen     = Math.max(0, Math.floor(center - gap/2));
-    let bottomLen  = Math.max(0, Math.floor(floor - (center + gap/2)));
-
-    // ตัดแต่งให้ดูเป็นธรรมชาติ (เสาสั้นมากให้ปิดเป็นศูนย์ไปเลย)
-    const MIN_LEN  = 30;
-    if (topLen    < MIN_LEN) topLen    = 0;
-    if (bottomLen < MIN_LEN) bottomLen = 0;
-
-    // สุ่ม 20% ให้เป็นเสาเดี่ยว แต่ต้อง “ไม่บังทาง”
-    if (Math.random() < 0.2) {
-      if (Math.random() < 0.5) {
-        // เสาบนเดี่ยว: จำกัดความสูงสูงสุดเพื่อเหลือทางด้านล่าง
-        const maxTop = floor - (ceiling + SAFE_PAD + PLAYER_H + CLEARANCE);
-        topLen = clamp(rand(80, Math.min(360, maxTop)), 0, Math.max(0, maxTop));
-        bottomLen = 0;
-      } else {
-        // เสาล่างเดี่ยว: จำกัดความสูงสูงสุดเพื่อเหลือทางด้านบน
-        const maxBottom = (floor - (ceiling + SAFE_PAD + PLAYER_H + CLEARANCE));
-        bottomLen = clamp(rand(80, Math.min(360, maxBottom)), 0, Math.max(0, maxBottom));
-        topLen = 0;
-      }
-    }
-
-    // ===== การันตี “มีทางผ่านได้” =====
-    // 1) ถ้าเป็นคู่เสา: gap ระหว่างปลายเสาบนกับต้นเสาล่างต้อง >= PLAYER_H + CLEARANCE
-    const actualGap = (floor - bottomLen) - topLen;
-    const passablePair = (topLen > 0 || bottomLen > 0)
-      ? (actualGap >= (PLAYER_H + CLEARANCE))
-      : true;
-
-    // 2) ถ้าเป็นเสาเดี่ยว: ความสูงเสานั้น ๆ ต้องไม่กินพื้นที่จนบังหมด
-    const passableSingleTop    = (topLen > 0 && bottomLen === 0)    ? ( (floor - topLen) - ceiling >= (PLAYER_H + CLEARANCE) ) : true;
-    const passableSingleBottom = (bottomLen > 0 && topLen === 0)    ? ( floor - (ceiling + bottomLen) >= (PLAYER_H + CLEARANCE) ) : true;
-
-    if (passablePair && passableSingleTop && passableSingleBottom) {
-      state.obstacles.push({ x, w, top: topLen, bottom: bottomLen, passed:false });
-      return; // ได้ชุดที่ผ่านแน่แล้ว ออกจากฟังก์ชัน
-    }
+  function save(){ localStorage.setItem(LS_KEY, JSON.stringify(items)); }
+  function load(){
+    try{
+      const raw = localStorage.getItem(LS_KEY);
+      if(raw){ items = JSON.parse(raw); }
+    }catch(e){ console.error(e); items=[] }
   }
 
-  // ถ้าสุ่มครบ 20 ครั้งแล้วยังไม่มั่นใจ ให้สร้าง "เสาล่างสั้น ๆ" การันตีผ่านได้
-  state.obstacles.push({
-    x, w,
-    top: 0,
-    bottom: 80,  // เสาล่างเตี้ย ๆ
-    passed:false
+  // ===== Rendering =====
+  function render(){
+    const tbody = byId('tbody');
+    tbody.innerHTML = '';
+
+    let count = items.length;
+    let totals = {
+      YOK:{ paid:0, splitPaid:0, share:0 },
+      FRONGZ:{ paid:0, splitPaid:0, share:0 }
+    };
+
+    for(const it of items){
+      const tr = document.createElement('tr');
+      const date = new Date(it.ts);
+      const d = date.toLocaleDateString('th-TH', { year:'2-digit', month:'2-digit', day:'2-digit' });
+
+      tr.innerHTML = `
+        <td class="mono">${d}</td>
+        <td>${escapeHtml(it.desc || '')}</td>
+        <td><span class="pill">${it.payer}</span></td>
+        <td class="right mono">${fmt.format(fromSatang(it.amountSatang))}</td>
+        <td>${it.split? '<span class="pill ok">หาร</span>':'<span class="pill">ไม่หาร</span>'}</td>
+        <td>
+          <button class="btn ghost" onclick="onEdit('${it.id}')">แก้ไข</button>
+          <button class="btn danger" onclick="onDelete('${it.id}')">ลบ</button>
+        </td>`;
+      tbody.appendChild(tr);
+
+      // Accumulate totals
+      totals[it.payer].paid += it.amountSatang;
+      if(it.split){
+        totals[it.payer].splitPaid += it.amountSatang;
+        totals.YOK.share += Math.round(it.amountSatang/2);
+        totals.FRONGZ.share += Math.round(it.amountSatang/2);
+      }
+    }
+
+    // Compute nets (only split items)
+    const yNetSatang = totals.YOK.splitPaid - totals.YOK.share;
+    const fNetSatang = totals.FRONGZ.splitPaid - totals.FRONGZ.share;
+
+    // Fill summary
+    byId('count').textContent = count;
+    byId('yPaid').textContent = fmt.format(fromSatang(totals.YOK.paid));
+    byId('fPaid').textContent = fmt.format(fromSatang(totals.FRONGZ.paid));
+    byId('yShare').textContent = fmt.format(fromSatang(totals.YOK.share));
+    byId('fShare').textContent = fmt.format(fromSatang(totals.FRONGZ.share));
+    byId('yNet').textContent = fmt.format(fromSatang(yNetSatang));
+    byId('fNet').textContent = fmt.format(fromSatang(fNetSatang));
+
+    // Settlement sentence
+    const settle = byId('settle');
+    let text = '';
+    if(Math.abs(yNetSatang + fNetSatang) > 1){
+      // Should be near 0; if not, force reconcile message
+      text = '⚠️ มีข้อผิดพลาดในการคำนวณ โปรดลองรีเฟรชหรือตรวจสอบจำนวนเงิน';
+    } else if (yNetSatang > 0) {
+      text = `สรุป: FRONGZ ควรโอนให้ YOK <strong class="mono">${fmt.format(fromSatang(yNetSatang))}</strong> เพื่อให้เป็นธรรม`;
+    } else if (yNetSatang < 0) {
+      text = `สรุป: YOK ควรโอนให้ FRONGZ <strong class="mono">${fmt.format(fromSatang(-yNetSatang))}</strong> เพื่อให้เป็นธรรม`;
+    } else {
+      text = 'สรุป: เสมอกัน ไม่ต้องโอนเพิ่ม ✅';
+    }
+    settle.innerHTML = text;
+
+    save();
+  }
+
+  // ===== Actions =====
+  function addOrUpdate(){
+    const desc = byId('desc').value.trim();
+    const amountStr = byId('amount').value;
+    const payer = byId('payer').value;
+    const split = byId('split').checked;
+
+    const amt = Number(amountStr);
+    if(!desc){ alert('กรอกรายการก่อนนะ'); return }
+    if(!isFinite(amt) || amt <= 0){ alert('จำนวนเงินไม่ถูกต้อง'); return }
+    const amountSatang = toSatang(amt);
+
+    if(editingId){
+      const idx = items.findIndex(x=>x.id===editingId);
+      if(idx>-1){ items[idx] = { ...items[idx], desc, amountSatang, payer, split } }
+      editingId = null;
+      byId('addBtn').textContent = 'เพิ่มรายการ';
+    } else {
+      items.push({ id: crypto.randomUUID(), ts: Date.now(), desc, amountSatang, payer, split });
+    }
+
+    // reset form
+    byId('desc').value = '';
+    byId('amount').value = '';
+    byId('payer').value = 'YOK';
+    byId('split').checked = true;
+
+    render();
+  }
+
+  function onEdit(id){
+    const it = items.find(x=>x.id===id);
+    if(!it) return;
+    byId('desc').value = it.desc;
+    byId('amount').value = fromSatang(it.amountSatang).toFixed(2);
+    byId('payer').value = it.payer;
+    byId('split').checked = !!it.split;
+    editingId = id;
+    byId('addBtn').textContent = 'บันทึกการแก้ไข';
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  function onDelete(id){
+    if(!confirm('ลบรายการนี้?')) return;
+    items = items.filter(x=>x.id!==id);
+    render();
+  }
+
+  function resetAll(){
+    if(!confirm('ลบรายการทั้งหมด?')) return;
+    items = [];
+    render();
+  }
+
+  function exportJson(){
+    const blob = new Blob([JSON.stringify(items,null,2)],{type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'yok-frongz-split.json'; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function importJson(file){
+    const reader = new FileReader();
+    reader.onload = (e)=>{
+      try{
+        const data = JSON.parse(e.target.result);
+        if(!Array.isArray(data)) throw new Error('format');
+        // basic sanitize
+        items = data.map(it=>({
+          id: it.id || crypto.randomUUID(),
+          ts: typeof it.ts==='number'? it.ts : Date.now(),
+          desc: String(it.desc||''),
+          amountSatang: toSatang(Number((it.amountSatang!=null)? fromSatang(it.amountSatang): it.amount)),
+          payer: (it.payer==='FRONGZ')? 'FRONGZ':'YOK',
+          split: !!it.split
+        }));
+        render();
+      }catch(err){ alert('ไฟล์ไม่ถูกต้อง'); }
+    };
+    reader.readAsText(file);
+  }
+
+  function escapeHtml(str){
+    return str.replace(/[&<>"]/g, s=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[s]));
+  }
+
+  // ===== Bindings =====
+  byId('addBtn').addEventListener('click', addOrUpdate);
+  byId('resetBtn').addEventListener('click', resetAll);
+  byId('exportBtn').addEventListener('click', exportJson);
+  byId('importFile').addEventListener('change', (e)=>{
+    const f=e.target.files?.[0]; if(f) importJson(f);
+    e.target.value='';
   });
-}
 
-
-
-    // ====== Particles ======
-    function spawnBurst(x,y,n,color){
-      for(let i=0;i<n;i++){
-        state.particles.push({x,y, vx:(Math.random()*2-1)*2, vy:-(Math.random()*2)*1.5, life: 30+Math.random()*20, color});
-      }
-    }
-    function updateParticles(){
-      for (const p of state.particles){ p.x+=p.vx; p.y+=p.vy; p.vy+=0.12; p.life-=1; }
-      state.particles = state.particles.filter(p=>p.life>0);
-    }
-
-    // ====== Loop ======
-    let spawnTimer = 0, prevGrounded = true;
-    function step(){
-      if(!state.running){ drawSplash(); return requestAnimationFrame(step); }
-      if(state.paused){ drawPaused(); return requestAnimationFrame(step); }
-
-      state.time++;
-      const W = canvas.width / DPR, H = canvas.height / DPR;
-
-      // difficulty
-      state.speed = state.baseSpeed + Math.min(6, Math.floor(state.score/8)*0.6);
-      document.getElementById('spd').textContent = (state.speed/state.baseSpeed).toFixed(1)+"x";
-
-      // bg
-      ctx.save();
-      ctx.clearRect(0,0,W,H);
-      drawStars(W, H, state.time);
-
-      // physics
-      player.vy += player.gravity;
-      player.y += player.vy;
-
-      const floor = H - 40, ceiling = 20;
-      if (player.y + player.h >= floor) { player.y = floor - player.h; player.vy=0; player.grounded=true; player.jumpsLeft=2; player.coyoteTime=0; }
-      else { if (player.grounded && player.vy>0) player.grounded=false; if (!player.grounded) player.coyoteTime = Math.max(0, player.coyoteTime-1); if (player.y <= ceiling){ player.y = ceiling; player.vy = Math.max(0, player.vy); } }
-
-      if (player.jumpBuffer>0){ if (tryJump()) player.jumpBuffer = 0; else player.jumpBuffer--; }
-
-      player.trail.push({x:player.x+player.w/2, y:player.y+player.h/2, life:14});
-      if (player.trail.length>40) player.trail.shift();
-      for(const t of player.trail) t.life-=1;
-
-      if (spawnTimer<=0){ spawnObstacle(); spawnTimer = state.spawnEvery - Math.min(40, Math.floor(state.score/4)); }
-      else spawnTimer -= 1;
-
-      for (const ob of state.obstacles){ ob.x -= state.speed; if(!ob.passed && ob.x + ob.w < player.x) { ob.passed=true; state.score++; if(state.score%6===0) spawnBurst(player.x+player.w/2, player.y, 12,'#6ae3ff'); } }
-      state.obstacles = state.obstacles.filter(ob => ob.x + ob.w > -10);
-      document.getElementById('score').textContent = state.score;
-      document.getElementById('best').textContent = state.best;
-
-      // collisions
-      for (const ob of state.obstacles){
-        if (ob.top>0){ const rectTop = {x:ob.x, y:0, w:ob.w, h:ob.top}; if (rectsOverlap(player, rectTop)) return gameOver(); }
-        if (ob.bottom>0){ const rectBot = {x:ob.x, y:H - ob.bottom, w:ob.w, h:ob.bottom}; if (rectsOverlap(player, rectBot)) return gameOver(); }
-      }
-
-      drawFloor(W,H);
-      drawObstacles(W,H);
-      drawPlayer();
-      updateParticles();
-      drawParticles();
-
-      // post-physics: coyote time
-      if (prevGrounded && !player.grounded){ player.coyoteTime = 8; }
-      prevGrounded = player.grounded;
-
-      ctx.restore();
-      requestAnimationFrame(step);
-    }
-
-    // ====== Drawing helpers ======
-    function drawStars(W,H,t){
-      ctx.fillStyle = '#0b1020'; ctx.fillRect(0,0,W,H);
-      ctx.fillStyle = '#13203a';
-      for (let i=0;i<80;i++){
-        const x = (i*127 + t*0.2) % (W+100) - 50;
-        const y = (i*53 % H);
-        ctx.globalAlpha = 0.15 + (i%5)*0.05;
-        ctx.fillRect(x, y, 2, 2);
-      }
-      ctx.globalAlpha = 1;
-    }
-    function drawFloor(W,H){ const y = H-40; ctx.strokeStyle = '#1f2b4d'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0,y+0.5); ctx.lineTo(W,y+0.5); ctx.stroke(); }
-    function drawObstacles(W,H){
-      for (const ob of state.obstacles){
-        const grd = ctx.createLinearGradient(ob.x,0, ob.x+ob.w,0);
-        grd.addColorStop(0,'#2a3d6b'); grd.addColorStop(1,'#234066');
-        ctx.fillStyle = grd;
-        if (ob.top>0) ctx.fillRect(ob.x, 0, ob.w, ob.top);
-        if (ob.bottom>0) ctx.fillRect(ob.x, H - ob.bottom, ob.w, ob.bottom);
-        ctx.fillStyle = 'rgba(255,255,255,0.06)';
-        if (ob.top>0) ctx.fillRect(ob.x+4, 0, 3, ob.top);
-        if (ob.bottom>0) ctx.fillRect(ob.x+4, H - ob.bottom, 3, ob.bottom);
-      }
-    }
-    function drawPlayer(){
-      for (const t of player.trail){ const a = Math.max(0, t.life/14); ctx.fillStyle = `rgba(138,247,141,${0.08*a})`; ctx.beginPath(); ctx.arc(t.x, t.y, (14-t.life)*0.6, 0, Math.PI*2); ctx.fill(); }
-      roundRect(ctx, player.x, player.y, player.w, player.h, 6, '#0b1020', player.color);
-      ctx.fillStyle = '#072e2a'; ctx.fillRect(player.x+player.w*0.62, player.y+player.h*0.30, 4, 4);
-    }
-    function drawParticles(){ for (const p of state.particles){ ctx.globalAlpha = Math.max(0, p.life/40); ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 3, 3);} ctx.globalAlpha = 1; }
-    function drawSplash(){
-      const W = canvas.width / DPR, H = canvas.height / DPR;
-      ctx.clearRect(0,0,W,H); drawStars(W,H,state.time++); drawFloor(W,H);
-      ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(0,0,W,H);
-      ctx.fillStyle = '#bfe8ff'; ctx.font = '700 42px system-ui'; ctx.textAlign = 'center';
-      ctx.fillText('DOUBLE JUMP', W/2, H/2 - 20);
-      ctx.font = '400 18px system-ui'; ctx.fillStyle = '#bde1c5';
-      ctx.fillText('กด Space / คลิก เพื่อเริ่ม & กระโดด (กระโดดซ้ำกลางอากาศได้)', W/2, H/2 + 16);
-    }
-    function drawPaused(){
-      const W = canvas.width / DPR, H = canvas.height / DPR;
-      ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fillRect(0,0,W,H);
-      ctx.fillStyle = '#fff'; ctx.font = '700 28px system-ui'; ctx.textAlign = 'center';
-      ctx.fillText('หยุดชั่วคราว', W/2, H/2);
-    }
-    function gameOver(){
-      state.running=false; spawnBurst(player.x+player.w/2, player.y+player.h/2, 38, '#ff7a93');
-      state.best = Math.max(state.best, state.score);
-      localStorage.setItem('dj_best', String(state.best));
-      drawGameOver();
-    }
-    function drawGameOver(){
-      const W = canvas.width / DPR, H = canvas.height / DPR;
-      ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(0,0,W,H);
-      ctx.textAlign = 'center'; ctx.fillStyle = '#ffd6dd'; ctx.font = '700 36px system-ui';
-      ctx.fillText('Game Over', W/2, H/2 - 10);
-      ctx.fillStyle = '#c7f5ff'; ctx.font = '500 18px system-ui';
-      ctx.fillText(`คะแนน: ${state.score}  |  ดีที่สุด: ${state.best}`, W/2, H/2 + 22);
-      ctx.fillStyle = '#bfe8ff';
-      ctx.fillText('กด ▶ เริ่ม / กด Space เพื่อเล่นใหม่', W/2, H/2 + 48);
-    }
-
-    // ====== Utils ======
-    function rectsOverlap(a, b){ return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
-    function roundRect(ctx,x,y,w,h,r,stroke,fill){
-      ctx.beginPath();
-      ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
-      ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r);
-      if (fill){ ctx.fillStyle = fill; ctx.fill(); }
-      if (stroke){ ctx.strokeStyle = stroke; ctx.lineWidth = 2; ctx.stroke(); }
-    }
-    function clamp(v,lo,hi){ return Math.max(lo, Math.min(hi, v)); }
-    function rand(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
-
-    // ====== Buttons ======
-    document.getElementById('startBtn').addEventListener('click', ()=>{ resetGame(); });
-    document.getElementById('pauseBtn').addEventListener('click', togglePause);
-    function togglePause(){ if(!state.running) return; state.paused = !state.paused; }
-
-   // ====== Auto start game loop on load ======
-window.addEventListener('load', ()=>{
-  resetGame();
-  requestAnimationFrame(step);
-});
-
-// ให้ปุ่ม ▶ เริ่ม / เล่นใหม่ สั่งเริ่มลูปด้วย
-document.getElementById('startBtn').addEventListener('click', ()=>{
-  resetGame();
-  requestAnimationFrame(step);
-});
-
+  // Init
+  load();
+  render();
   </script>
 </body>
 </html>
