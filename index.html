@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -46,6 +48,7 @@
     const ctx = canvas.getContext('2d');
     function fitCanvasToDPR() {
       const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+      const { width, height } = canvas;
       ctx.setTransform(dpr,0,0,dpr,0,0);
       return dpr;
     }
@@ -93,73 +96,92 @@
     }
 
     // ====== Obstacles (top & bottom) ======
-    function spawnObstacle() {
-      const W = canvas.width / DPR, H = canvas.height / DPR;
-      const ceiling = 20, floor = H - 40;
-      const SAFE_PAD = 24, PLAYER_H = player.h;
+function drawObstacles(W,H){
+  const floor = H - 40; // เส้นพื้นจริง
+  for (const ob of state.obstacles){
+    const grd = ctx.createLinearGradient(ob.x,0, ob.x+ob.w,0);
+    grd.addColorStop(0,'#2a3d6b'); grd.addColorStop(1,'#234066');
+    ctx.fillStyle = grd;
 
-      // ควบคุมความยาก: ช่องแคบลงเมื่อคะแนนสูง
-      const diff = Math.min(1, state.score / 40);
-      const CLEARANCE = 78 - diff * 30; // 78 -> 48
-      const GAP_MIN = Math.max(PLAYER_H + CLEARANCE, 100 - diff * 20);
-      const GAP_MAX = Math.min(250 - diff * 50, (floor - ceiling) - SAFE_PAD * 2);
+    // เสาบน
+    if (ob.top>0) ctx.fillRect(ob.x, 0, ob.w, ob.top);
 
-      const MIN_CENTER = ceiling + SAFE_PAD + (PLAYER_H + CLEARANCE) / 2;
-      const MAX_CENTER = floor   - SAFE_PAD - (PLAYER_H + CLEARANCE) / 2;
+    // เสาล่าง: อ้างจาก floor ขึ้นไป
+    if (ob.bottom>0) ctx.fillRect(ob.x, floor - ob.bottom, ob.w, ob.bottom);
 
-      const w = rand(46, 70);
-      const x = (canvas.width / DPR) + w;
+    // ไฮไลต์เล็กน้อย
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    if (ob.top>0) ctx.fillRect(ob.x+4, 0, 3, ob.top);
+    if (ob.bottom>0) ctx.fillRect(ob.x+4, floor - ob.bottom, 3, ob.bottom);
+  }
+}
 
-      // สุ่มลักษณะเสา (เน้นเสาล่างสูงบ้าง)
-      const modeRand = Math.random();
-      let mode = "pair";
-      if (modeRand < 0.15) mode = "singleTop";
-      else if (modeRand < 0.45) mode = "singleBottom";
+  // ควบคุมความยาก: ช่องแคบลงเมื่อคะแนนสูง
+  const diff = Math.min(1, state.score / 40);
+  const CLEARANCE = 78 - diff * 30;
+  const GAP_MIN = Math.max(PLAYER_H + CLEARANCE, 100 - diff * 20);
+  const GAP_MAX = Math.min(250 - diff * 50, (floor - ceiling) - SAFE_PAD * 2);
 
-      const gap = rand(Math.floor(GAP_MIN), Math.floor(GAP_MAX));
+  const MIN_CENTER = ceiling + SAFE_PAD + (PLAYER_H + CLEARANCE) / 2;
+  const MAX_CENTER = floor   - SAFE_PAD - (PLAYER_H + CLEARANCE) / 2;
 
-      // bias ให้เสาล่างสูงบ่อยขึ้นเล็กน้อย
-      let center;
-      if (Math.random() < (0.55 + 0.25 * diff)) {
-        const biasDown = 25 + Math.floor(45 * diff);
-        const biasedMin = Math.min(MAX_CENTER, ((MIN_CENTER + MAX_CENTER) / 2));
-        const biasedMax = Math.min(MAX_CENTER, floor - SAFE_PAD - (PLAYER_H + CLEARANCE) / 2);
-        center = rand(Math.floor(biasedMin), Math.floor(Math.max(biasedMin, biasedMax))) + biasDown;
-        center = Math.min(center, MAX_CENTER);
-      } else {
-        center = rand(Math.floor(MIN_CENTER), Math.floor(MAX_CENTER));
-      }
+  const w = rand(46, 70);
+  const x = (canvas.width / DPR) + w;
 
-      let topLen    = Math.max(0, Math.floor(center - gap / 2));
-      let bottomLen = Math.max(0, Math.floor(floor   - (center + gap / 2)));
+  // สุ่มลักษณะเสา (เน้นเสาล่างสูง)
+  const modeRand = Math.random();
+  let mode = "pair";
+  if (modeRand < 0.15) mode = "singleTop";
+  else if (modeRand < 0.45) mode = "singleBottom"; // ล่างเดี่ยวบ่อยขึ้น
 
-      if (mode === "singleTop")    { bottomLen = 0; topLen    = Math.max(topLen,    rand(90, 360)); }
-      if (mode === "singleBottom") { topLen    = 0; bottomLen = Math.max(bottomLen, rand(130, 360)); }
+  const gap = rand(Math.floor(GAP_MIN), Math.floor(GAP_MAX));
 
-      // การันตีช่องขั้นต่ำ
-      const MIN_PASS = PLAYER_H + CLEARANCE;
-      const actualGap = (floor - bottomLen) - topLen;
-      if (actualGap < MIN_PASS) {
-        const fix = Math.ceil((MIN_PASS - actualGap) / 2);
-        topLen    = Math.max(0, topLen    - fix);
-        bottomLen = Math.max(0, bottomLen - fix);
-      }
+  // bias ให้เสาล่างสูงบ่อยขึ้น
+  let center;
+  if (Math.random() < (0.55 + 0.25 * diff)) {
+    const biasDown = 25 + Math.floor(45 * diff);
+    const biasedMin = Math.min(MAX_CENTER, ((MIN_CENTER + MAX_CENTER) / 2));
+    const biasedMax = Math.min(MAX_CENTER, floor - SAFE_PAD - (PLAYER_H + CLEARANCE) / 2);
+    center = rand(Math.floor(biasedMin), Math.floor(Math.max(biasedMin, biasedMax))) + biasDown;
+    center = Math.min(center, MAX_CENTER);
+  } else {
+    center = rand(Math.floor(MIN_CENTER), Math.floor(MAX_CENTER));
+  }
 
-      // ===== บังคับให้เสาล่าง "โผล่พ้นพื้นมากขึ้น" =====
-      if (bottomLen > 0) {
-        const MIN_BOTTOM_VISIBLE = 60; // ปรับสูง/ต่ำได้ 40–80 ตามรสนิยม
-        if (bottomLen < MIN_BOTTOM_VISIBLE) bottomLen = MIN_BOTTOM_VISIBLE;
-      }
+  let topLen = Math.max(0, Math.floor(center - gap / 2));
+  let bottomLen = Math.max(0, Math.floor(floor - (center + gap / 2)));
 
-      // เพิ่มน้ำหนักให้เสาล่างเฉลี่ยสูงขึ้นเมื่อ diff สูง
-      if (mode !== "singleTop" && Math.random() < (0.35 + 0.25 * diff)) {
-        const targetBottom = rand(120, Math.min(300, floor - (MIN_PASS + ceiling)));
-        bottomLen = clamp(targetBottom, 0, floor - MIN_PASS - ceiling);
-        topLen = Math.max(0, floor - bottomLen - MIN_PASS - rand(0, 12));
-      }
+  if (mode === "singleTop")   { bottomLen = 0; topLen = Math.max(topLen, rand(90, 360)); }
+  if (mode === "singleBottom"){ topLen = 0;   bottomLen = Math.max(bottomLen, rand(110, 360)); }
 
-      state.obstacles.push({ x, w, top: topLen, bottom: bottomLen, passed: false });
-    }
+  const MIN_PASS = PLAYER_H + CLEARANCE;
+  const actualGap = (floor - bottomLen) - topLen;
+  if (actualGap < MIN_PASS) {
+    const fix = Math.ceil((MIN_PASS - actualGap) / 2);
+    topLen = Math.max(0, topLen - fix);
+    bottomLen = Math.max(0, bottomLen - fix);
+  }
+
+  // เสาล่างเฉลี่ยสูงขึ้นบ่อย
+  if (mode !== "singleTop" && Math.random() < (0.35 + 0.25 * diff)) {
+    const targetBottom = rand(110, Math.min(300, floor - (MIN_PASS + ceiling)));
+    bottomLen = clamp(targetBottom, 0, floor - MIN_PASS - ceiling);
+    topLen = Math.max(0, floor - bottomLen - MIN_PASS - rand(0, 12));
+  }
+
+  state.obstacles.push({ x, w, top: topLen, bottom: bottomLen, passed: false });
+}
+
+  // ถ้าสุ่มครบ 20 ครั้งแล้วยังไม่มั่นใจ ให้สร้าง "เสาล่างสั้น ๆ" การันตีผ่านได้
+  state.obstacles.push({
+    x, w,
+    top: 0,
+    bottom: 80,  // เสาล่างเตี้ย ๆ
+    passed:false
+  });
+}
+
+
 
     // ====== Particles ======
     function spawnBurst(x,y,n,color){
@@ -196,11 +218,7 @@
 
       const floor = H - 40, ceiling = 20;
       if (player.y + player.h >= floor) { player.y = floor - player.h; player.vy=0; player.grounded=true; player.jumpsLeft=2; player.coyoteTime=0; }
-      else {
-        if (player.grounded && player.vy>0) player.grounded=false;
-        if (!player.grounded) player.coyoteTime = Math.max(0, player.coyoteTime-1);
-        if (player.y <= ceiling){ player.y = ceiling; player.vy = Math.max(0, player.vy); }
-      }
+      else { if (player.grounded && player.vy>0) player.grounded=false; if (!player.grounded) player.coyoteTime = Math.max(0, player.coyoteTime-1); if (player.y <= ceiling){ player.y = ceiling; player.vy = Math.max(0, player.vy); } }
 
       if (player.jumpBuffer>0){ if (tryJump()) player.jumpBuffer = 0; else player.jumpBuffer--; }
 
@@ -208,38 +226,25 @@
       if (player.trail.length>40) player.trail.shift();
       for(const t of player.trail) t.life-=1;
 
-      // สุ่มสิ่งกีดขวางให้ถี่ขึ้นตามคะแนน
       if (spawnTimer <= 0) {
-        spawnObstacle();
-        const minSpawn = 55; // 50–70 ยิ่งน้อยยิ่งถี่
-        const scale = Math.min(60, Math.floor(state.score / 2));
-        spawnTimer = Math.max(minSpawn, state.spawnEvery - scale);
-      } else {
-        spawnTimer -= 1;
-      }
+  spawnObstacle();
+  // ถี่ขึ้นเรื่อย ๆ ตามคะแนน
+  const minSpawn = 55; // ยิ่งน้อยยิ่งถี่ (ปรับได้ระหว่าง 50–70)
+  const scale = Math.min(60, Math.floor(state.score / 2)); // ความถี่เพิ่มตามคะแนน
+  spawnTimer = Math.max(minSpawn, state.spawnEvery - scale);
+} else {
+  spawnTimer -= 1;
+}
 
-      // เคลื่อนที่/นับคะแนน
-      for (const ob of state.obstacles){
-        ob.x -= state.speed;
-        if(!ob.passed && ob.x + ob.w < player.x) {
-          ob.passed=true; state.score++;
-          if(state.score%6===0) spawnBurst(player.x+player.w/2, player.y, 12,'#6ae3ff');
-        }
-      }
+      for (const ob of state.obstacles){ ob.x -= state.speed; if(!ob.passed && ob.x + ob.w < player.x) { ob.passed=true; state.score++; if(state.score%6===0) spawnBurst(player.x+player.w/2, player.y, 12,'#6ae3ff'); } }
       state.obstacles = state.obstacles.filter(ob => ob.x + ob.w > -10);
       document.getElementById('score').textContent = state.score;
       document.getElementById('best').textContent = state.best;
 
-      // collisions (ใช้ floor - ob.bottom)
+      // collisions
       for (const ob of state.obstacles){
-        if (ob.top>0){
-          const rectTop = {x:ob.x, y:0, w:ob.w, h:ob.top};
-          if (rectsOverlap(player, rectTop)) return gameOver();
-        }
-        if (ob.bottom>0){
-          const rectBot = {x:ob.x, y: floor - ob.bottom, w:ob.w, h:ob.bottom};
-          if (rectsOverlap(player, rectBot)) return gameOver();
-        }
+        if (ob.top>0){ const rectTop = {x:ob.x, y:0, w:ob.w, h:ob.top}; if (rectsOverlap(player, rectTop)) return gameOver(); }
+        if (ob.bottom>0){ const rectBot = {x:ob.x, y:H - ob.bottom, w:ob.w, h:ob.bottom}; if (rectsOverlap(player, rectBot)) return gameOver(); }
       }
 
       drawFloor(W,H);
@@ -268,40 +273,25 @@
       }
       ctx.globalAlpha = 1;
     }
-    function drawFloor(W,H){
-      const y = H-40;
-      ctx.strokeStyle = '#1f2b4d'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(0,y+0.5); ctx.lineTo(W,y+0.5); ctx.stroke();
-    }
+    function drawFloor(W,H){ const y = H-40; ctx.strokeStyle = '#1f2b4d'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0,y+0.5); ctx.lineTo(W,y+0.5); ctx.stroke(); }
     function drawObstacles(W,H){
-      const floor = H - 40;
       for (const ob of state.obstacles){
         const grd = ctx.createLinearGradient(ob.x,0, ob.x+ob.w,0);
         grd.addColorStop(0,'#2a3d6b'); grd.addColorStop(1,'#234066');
         ctx.fillStyle = grd;
         if (ob.top>0) ctx.fillRect(ob.x, 0, ob.w, ob.top);
-        if (ob.bottom>0) ctx.fillRect(ob.x, floor - ob.bottom, ob.w, ob.bottom);
+        if (ob.bottom>0) ctx.fillRect(ob.x, H - ob.bottom, ob.w, ob.bottom);
         ctx.fillStyle = 'rgba(255,255,255,0.06)';
         if (ob.top>0) ctx.fillRect(ob.x+4, 0, 3, ob.top);
-        if (ob.bottom>0) ctx.fillRect(ob.x+4, floor - ob.bottom, 3, ob.bottom);
+        if (ob.bottom>0) ctx.fillRect(ob.x+4, H - ob.bottom, 3, ob.bottom);
       }
     }
     function drawPlayer(){
-      for (const t of player.trail){
-        const a = Math.max(0, t.life/14);
-        ctx.fillStyle = `rgba(138,247,141,${0.08*a})`;
-        ctx.beginPath(); ctx.arc(t.x, t.y, (14-t.life)*0.6, 0, Math.PI*2); ctx.fill();
-      }
+      for (const t of player.trail){ const a = Math.max(0, t.life/14); ctx.fillStyle = `rgba(138,247,141,${0.08*a})`; ctx.beginPath(); ctx.arc(t.x, t.y, (14-t.life)*0.6, 0, Math.PI*2); ctx.fill(); }
       roundRect(ctx, player.x, player.y, player.w, player.h, 6, '#0b1020', player.color);
       ctx.fillStyle = '#072e2a'; ctx.fillRect(player.x+player.w*0.62, player.y+player.h*0.30, 4, 4);
     }
-    function drawParticles(){
-      for (const p of state.particles){
-        ctx.globalAlpha = Math.max(0, p.life/40);
-        ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 3, 3);
-      }
-      ctx.globalAlpha = 1;
-    }
+    function drawParticles(){ for (const p of state.particles){ ctx.globalAlpha = Math.max(0, p.life/40); ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 3, 3);} ctx.globalAlpha = 1; }
     function drawSplash(){
       const W = canvas.width / DPR, H = canvas.height / DPR;
       ctx.clearRect(0,0,W,H); drawStars(W,H,state.time++); drawFloor(W,H);
@@ -317,8 +307,6 @@
       ctx.fillStyle = '#fff'; ctx.font = '700 28px system-ui'; ctx.textAlign = 'center';
       ctx.fillText('หยุดชั่วคราว', W/2, H/2);
     }
-
-    // ====== Utils & Game Over ======
     function gameOver(){
       state.running=false; spawnBurst(player.x+player.w/2, player.y+player.h/2, 38, '#ff7a93');
       state.best = Math.max(state.best, state.score);
@@ -335,6 +323,8 @@
       ctx.fillStyle = '#bfe8ff';
       ctx.fillText('กด ▶ เริ่ม / กด Space เพื่อเล่นใหม่', W/2, H/2 + 48);
     }
+
+    // ====== Utils ======
     function rectsOverlap(a, b){ return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
     function roundRect(ctx,x,y,w,h,r,stroke,fill){
       ctx.beginPath();
@@ -346,16 +336,23 @@
     function clamp(v,lo,hi){ return Math.max(lo, Math.min(hi, v)); }
     function rand(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
 
-    // ====== Buttons & Autostart ======
-    document.getElementById('startBtn').addEventListener('click', ()=>{ resetGame(); requestAnimationFrame(step); });
+    // ====== Buttons ======
+    document.getElementById('startBtn').addEventListener('click', ()=>{ resetGame(); });
     document.getElementById('pauseBtn').addEventListener('click', togglePause);
     function togglePause(){ if(!state.running) return; state.paused = !state.paused; }
 
-    // เริ่มเกมเมื่อ DOM พร้อม (กันโหลดไม่ครบ)
-    document.addEventListener('DOMContentLoaded', ()=>{
-      resetGame();
-      requestAnimationFrame(step);
-    });
+   // ====== Auto start game loop on load ======
+window.addEventListener('load', ()=>{
+  resetGame();
+  requestAnimationFrame(step);
+});
+
+// ให้ปุ่ม ▶ เริ่ม / เล่นใหม่ สั่งเริ่มลูปด้วย
+document.getElementById('startBtn').addEventListener('click', ()=>{
+  resetGame();
+  requestAnimationFrame(step);
+});
+
   </script>
 </body>
 </html>
