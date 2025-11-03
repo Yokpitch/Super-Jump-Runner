@@ -56,7 +56,7 @@
     // ====== Game State ======
     const state = {
       running:false, paused:false, time:0, score:0, best: Number(localStorage.getItem('dj_best')||0),
-      speed: 5, baseSpeed:5, spawnEvery: 95, obstacles:[], particles:[],
+      speed: 5, baseSpeed:5, spawnEvery: 80, obstacles:[], particles:[],
     };
 
     // ====== Player ======
@@ -94,75 +94,66 @@
     }
 
     // ====== Obstacles (top & bottom) ======
-function spawnObstacle(){
+function spawnObstacle() {
   const W = canvas.width / DPR, H = canvas.height / DPR;
+  const ceiling = 20, floor = H - 40;
+  const SAFE_PAD = 24, PLAYER_H = player.h;
 
-  // เส้นบน/ล่างของพื้นที่เล่นจริง
-  const ceiling = 20;
-  const floor   = H - 40;
+  // ควบคุมความยาก: ช่องแคบลงเมื่อคะแนนสูง
+  const diff = Math.min(1, state.score / 40);
+  const CLEARANCE = 78 - diff * 30;
+  const GAP_MIN = Math.max(PLAYER_H + CLEARANCE, 100 - diff * 20);
+  const GAP_MAX = Math.min(250 - diff * 50, (floor - ceiling) - SAFE_PAD * 2);
 
-  // พารามิเตอร์ความปลอดภัย (ปรับได้)
-  const SAFE_PAD    = 24;    // กันชนเหนือ/ใต้รางวิ่ง
-  const CLEARANCE   = 70;    // ช่องว่างที่ต้องมีเหนือความสูงผู้เล่น
-  const PLAYER_H    = player.h;
+  const MIN_CENTER = ceiling + SAFE_PAD + (PLAYER_H + CLEARANCE) / 2;
+  const MAX_CENTER = floor   - SAFE_PAD - (PLAYER_H + CLEARANCE) / 2;
 
-  // โซน "แกนกลางช่อง" ที่ยอมให้สุ่ม (ไม่ชิดเพดาน/พื้นเกินไป)
-  const MIN_CENTER  = ceiling + SAFE_PAD + (PLAYER_H + CLEARANCE)/2;
-  const MAX_CENTER  = floor   - SAFE_PAD - (PLAYER_H + CLEARANCE)/2;
-
-  // ขอบเขต gap
-  const GAP_MIN = Math.max(PLAYER_H + CLEARANCE, 120);
-  const GAP_MAX = Math.min(220, (floor - ceiling) - SAFE_PAD*2);
-
-  // ความหนาเสา และจุดเกิด
-  const w = rand(44, 66);
+  const w = rand(46, 70);
   const x = (canvas.width / DPR) + w;
 
-  // เราจะ “สุ่มแล้วตรวจ” สูงสุด N ครั้งเพื่อการันตีว่าผ่านได้
-  for (let tries = 0; tries < 20; tries++) {
-    const gap      = rand(GAP_MIN, GAP_MAX);
-    const center   = rand(Math.floor(MIN_CENTER), Math.floor(MAX_CENTER));
+  // สุ่มลักษณะเสา (เน้นเสาล่างสูง)
+  const modeRand = Math.random();
+  let mode = "pair";
+  if (modeRand < 0.15) mode = "singleTop";
+  else if (modeRand < 0.45) mode = "singleBottom"; // ล่างเดี่ยวบ่อยขึ้น
 
-    // จาก gap+center หาเสาบน/ล่าง
-    let topLen     = Math.max(0, Math.floor(center - gap/2));
-    let bottomLen  = Math.max(0, Math.floor(floor - (center + gap/2)));
+  const gap = rand(Math.floor(GAP_MIN), Math.floor(GAP_MAX));
 
-    // ตัดแต่งให้ดูเป็นธรรมชาติ (เสาสั้นมากให้ปิดเป็นศูนย์ไปเลย)
-    const MIN_LEN  = 30;
-    if (topLen    < MIN_LEN) topLen    = 0;
-    if (bottomLen < MIN_LEN) bottomLen = 0;
-
-    // สุ่ม 20% ให้เป็นเสาเดี่ยว แต่ต้อง “ไม่บังทาง”
-    if (Math.random() < 0.2) {
-      if (Math.random() < 0.5) {
-        // เสาบนเดี่ยว: จำกัดความสูงสูงสุดเพื่อเหลือทางด้านล่าง
-        const maxTop = floor - (ceiling + SAFE_PAD + PLAYER_H + CLEARANCE);
-        topLen = clamp(rand(80, Math.min(360, maxTop)), 0, Math.max(0, maxTop));
-        bottomLen = 0;
-      } else {
-        // เสาล่างเดี่ยว: จำกัดความสูงสูงสุดเพื่อเหลือทางด้านบน
-        const maxBottom = (floor - (ceiling + SAFE_PAD + PLAYER_H + CLEARANCE));
-        bottomLen = clamp(rand(80, Math.min(360, maxBottom)), 0, Math.max(0, maxBottom));
-        topLen = 0;
-      }
-    }
-
-    // ===== การันตี “มีทางผ่านได้” =====
-    // 1) ถ้าเป็นคู่เสา: gap ระหว่างปลายเสาบนกับต้นเสาล่างต้อง >= PLAYER_H + CLEARANCE
-    const actualGap = (floor - bottomLen) - topLen;
-    const passablePair = (topLen > 0 || bottomLen > 0)
-      ? (actualGap >= (PLAYER_H + CLEARANCE))
-      : true;
-
-    // 2) ถ้าเป็นเสาเดี่ยว: ความสูงเสานั้น ๆ ต้องไม่กินพื้นที่จนบังหมด
-    const passableSingleTop    = (topLen > 0 && bottomLen === 0)    ? ( (floor - topLen) - ceiling >= (PLAYER_H + CLEARANCE) ) : true;
-    const passableSingleBottom = (bottomLen > 0 && topLen === 0)    ? ( floor - (ceiling + bottomLen) >= (PLAYER_H + CLEARANCE) ) : true;
-
-    if (passablePair && passableSingleTop && passableSingleBottom) {
-      state.obstacles.push({ x, w, top: topLen, bottom: bottomLen, passed:false });
-      return; // ได้ชุดที่ผ่านแน่แล้ว ออกจากฟังก์ชัน
-    }
+  // bias ให้เสาล่างสูงบ่อยขึ้น
+  let center;
+  if (Math.random() < (0.55 + 0.25 * diff)) {
+    const biasDown = 25 + Math.floor(45 * diff);
+    const biasedMin = Math.min(MAX_CENTER, ((MIN_CENTER + MAX_CENTER) / 2));
+    const biasedMax = Math.min(MAX_CENTER, floor - SAFE_PAD - (PLAYER_H + CLEARANCE) / 2);
+    center = rand(Math.floor(biasedMin), Math.floor(Math.max(biasedMin, biasedMax))) + biasDown;
+    center = Math.min(center, MAX_CENTER);
+  } else {
+    center = rand(Math.floor(MIN_CENTER), Math.floor(MAX_CENTER));
   }
+
+  let topLen = Math.max(0, Math.floor(center - gap / 2));
+  let bottomLen = Math.max(0, Math.floor(floor - (center + gap / 2)));
+
+  if (mode === "singleTop")   { bottomLen = 0; topLen = Math.max(topLen, rand(90, 360)); }
+  if (mode === "singleBottom"){ topLen = 0;   bottomLen = Math.max(bottomLen, rand(110, 360)); }
+
+  const MIN_PASS = PLAYER_H + CLEARANCE;
+  const actualGap = (floor - bottomLen) - topLen;
+  if (actualGap < MIN_PASS) {
+    const fix = Math.ceil((MIN_PASS - actualGap) / 2);
+    topLen = Math.max(0, topLen - fix);
+    bottomLen = Math.max(0, bottomLen - fix);
+  }
+
+  // เสาล่างเฉลี่ยสูงขึ้นบ่อย
+  if (mode !== "singleTop" && Math.random() < (0.35 + 0.25 * diff)) {
+    const targetBottom = rand(110, Math.min(300, floor - (MIN_PASS + ceiling)));
+    bottomLen = clamp(targetBottom, 0, floor - MIN_PASS - ceiling);
+    topLen = Math.max(0, floor - bottomLen - MIN_PASS - rand(0, 12));
+  }
+
+  state.obstacles.push({ x, w, top: topLen, bottom: bottomLen, passed: false });
+}
 
   // ถ้าสุ่มครบ 20 ครั้งแล้วยังไม่มั่นใจ ให้สร้าง "เสาล่างสั้น ๆ" การันตีผ่านได้
   state.obstacles.push({
@@ -218,8 +209,15 @@ function spawnObstacle(){
       if (player.trail.length>40) player.trail.shift();
       for(const t of player.trail) t.life-=1;
 
-      if (spawnTimer<=0){ spawnObstacle(); spawnTimer = state.spawnEvery - Math.min(40, Math.floor(state.score/4)); }
-      else spawnTimer -= 1;
+      if (spawnTimer <= 0) {
+  spawnObstacle();
+  // ถี่ขึ้นเรื่อย ๆ ตามคะแนน
+  const minSpawn = 55; // ยิ่งน้อยยิ่งถี่ (ปรับได้ระหว่าง 50–70)
+  const scale = Math.min(60, Math.floor(state.score / 2)); // ความถี่เพิ่มตามคะแนน
+  spawnTimer = Math.max(minSpawn, state.spawnEvery - scale);
+} else {
+  spawnTimer -= 1;
+}
 
       for (const ob of state.obstacles){ ob.x -= state.speed; if(!ob.passed && ob.x + ob.w < player.x) { ob.passed=true; state.score++; if(state.score%6===0) spawnBurst(player.x+player.w/2, player.y, 12,'#6ae3ff'); } }
       state.obstacles = state.obstacles.filter(ob => ob.x + ob.w > -10);
