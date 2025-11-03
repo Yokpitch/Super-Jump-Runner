@@ -94,10 +94,25 @@
     }
 
     // ====== Obstacles (top & bottom) ======
-function spawnObstacle() {
-  const W = canvas.width / DPR, H = canvas.height / DPR;
-  const ceiling = 20, floor = H - 40;
-  const SAFE_PAD = 24, PLAYER_H = player.h;
+function drawObstacles(W,H){
+  const floor = H - 40; // เส้นพื้นจริง
+  for (const ob of state.obstacles){
+    const grd = ctx.createLinearGradient(ob.x,0, ob.x+ob.w,0);
+    grd.addColorStop(0,'#2a3d6b'); grd.addColorStop(1,'#234066');
+    ctx.fillStyle = grd;
+
+    // เสาบน
+    if (ob.top>0) ctx.fillRect(ob.x, 0, ob.w, ob.top);
+
+    // เสาล่าง: อ้างจาก floor ขึ้นไป
+    if (ob.bottom>0) ctx.fillRect(ob.x, floor - ob.bottom, ob.w, ob.bottom);
+
+    // ไฮไลต์เล็กน้อย
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    if (ob.top>0) ctx.fillRect(ob.x+4, 0, 3, ob.top);
+    if (ob.bottom>0) ctx.fillRect(ob.x+4, floor - ob.bottom, 3, ob.bottom);
+  }
+}
 
   // ควบคุมความยาก: ช่องแคบลงเมื่อคะแนนสูง
   const diff = Math.min(1, state.score / 40);
